@@ -21,11 +21,6 @@ from openai.types.responses import ResponseTextDeltaEvent
 
 app = FastAPI(title="Slack-Agent API")
 
-# Health check endpoint for Railway
-@app.get("/health")
-async def health_check():
-    return JSONResponse({"status": "ok", "message": "Python Agent is running"})
-
 # --- Application Startup Event ---
 @app.on_event("startup")
 async def startup_event():

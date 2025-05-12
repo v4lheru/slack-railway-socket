@@ -43,16 +43,7 @@ export const app = new App({
         getLevel: () => getBoltLogLevel(),
         setName: () => { }, // No-op
     },
-    customRoutes: [
-        {
-            path: '/health',
-            method: ['GET'],
-            handler: (req, res) => {
-                res.writeHead(200);
-                res.end('Health check: OK');
-            },
-        },
-    ],
+    // No custom routes
 });
 
 // Initialize the app

@@ -16,6 +16,8 @@ except ModuleNotFoundError:
     from openai_agents import Runner   # fallback for some installs
     from openai_agents.exceptions import ModelBehaviorError
 from custom_slack_agent import _agent, ACTIVE_MCP_SERVERS
+import os
+from datetime import datetime
 
 from openai.types.responses import ResponseTextDeltaEvent
 
@@ -174,6 +176,18 @@ async def stream_agent_events(agent, messages, max_retries=5):
     print("PY_AGENT_DEBUG (stream_agent_events): Agent stream generator finished.")
 
 
+# Function to reload the system prompt from file
+def reload_system_prompt():
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "system_prompt.md"), "r", encoding="utf-8") as f:
+            system_prompt = f"Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n" + f.read()
+        print(f"PY_AGENT_INFO (reload_system_prompt): Successfully reloaded system prompt from file.")
+        return system_prompt
+    except Exception as e:
+        print(f"PY_AGENT_ERROR (reload_system_prompt): Failed to reload system prompt: {e}")
+        print(f"PY_AGENT_ERROR (reload_system_prompt): Traceback: {traceback.format_exc()}")
+        return None
+
 @app.post("/generate")
 async def generate_stream(req: ChatRequest):
     print(f"PY_AGENT_DEBUG (/generate): Received request. Prompt type: {type(req.prompt)}")
@@ -214,6 +228,15 @@ async def generate_stream(req: ChatRequest):
             elif hist_msg["role"] == "assistant" and "tool_calls" in hist_msg:
                 cleaned_msg["tool_calls"] = hist_msg["tool_calls"]
             cleaned_messages.append(cleaned_msg)
+    
+    # Reload the system prompt for every request
+    system_prompt = reload_system_prompt()
+    
+    # Add system message to ensure it's always included
+    if system_prompt:
+        # Add system message as the first message
+        cleaned_messages.insert(0, {"role": "system", "content": system_prompt})
+        print(f"PY_AGENT_INFO (/generate): Added fresh system prompt to messages.")
     
     # Check type of req.prompt before appending
     if isinstance(req.prompt, str) or isinstance(req.prompt, list):
